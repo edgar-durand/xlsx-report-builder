@@ -16,7 +16,16 @@ const SETIINGS = {
 const allFilePaths = [];
 const names = [];
 const totalBus = [];
-const PNA_BOOK = [];
+const PNA_BOOK = [
+    ['MATRICULA',
+        'CLASIFICACION',
+        'DESDE',
+        'HASTA',
+        'TIEMPO',
+        'LUGAR',
+        'DESCRIPCION'
+    ],
+];
 let totalTracks = 0;
 
 /************************************ */
@@ -28,10 +37,14 @@ let totalTracks = 0;
 const ALLOWED_STOP = [
     // KM 0 Zona recojida de los trabajadores
     'PARQUE LA GUIRA, BANES',
+    'Antonio Dumois Entre Pasaje 8 y Coronel Tío, La Palma Número Uno, Banes, Holguín', //Entrada de la base
+    'Guamá Entre Carretera de Veguita y Final, Veguitas, Banes, Holguín', //Entrada al cupet
+
     'Flor Crombet Entre Bayamo y Carlos Manuel de Céspedes, Banes, Banes, Holguín', //Parque Cardenas
     'Ave.General Marrero Entre Bayamo y Carlos Manuel de Céspedes, Banes, Banes, Holguín', //Parque Cardenas
     'Luz y Caballero Entre Flor Crombet y Augusto Blanco, Banes, Banes, Holguín', //Parque Cardenas
     'Augusto Blanco Entre Bruno Meriño y Bayamo, Banes, Banes, Holguín', //Parque Cardenas
+    'Ave.Cárdenas Entre Carlos Manuel de Céspedes y José Martí, Banes, Banes, Holguín', //Parque Cardenas
 
     // EN RUTAS ACTIVIDAD FUNDAMENTAL
     'El Limpio de Retrete,  BANES,  HOLGUÍN',
@@ -42,6 +55,7 @@ const ALLOWED_STOP = [
     'ÓPTICA, BANES',
     'Playa Pesquera Nueva,  RAFAEL FREYRE,  HOLGUÍN',
     'Melilla,  RAFAEL FREYRE,  HOLGUÍN',
+    'Tonquín,  RAFAEL FREYRE,  HOLGUÍN',
     'Guardalavaca,  BANES,  HOLGUÍN',
     'HOTEL GUARDALAVACA, GUARDALAVACA',
     'Playa de Morales,  -,  HOLGUÍN',
@@ -67,7 +81,8 @@ const ALLOWED_STOP = [
 /************************************ */
 const FORBIDDEN_STOP = [
     //EX. ['TRAFFIC STREET, NO. 18', 'CHOFER'S HOUSE'],
-    // ['', ''],
+    ['Los Pasos,  BANES,  HOLGUÍN', 'CASA DE ALEXIS RODRIGO JIMENEZ'],
+    ['HOSPITAL CALLE MULA, BANES', 'RECOJIDA DEL CHOFER LUIS O. RICARDO AVILA'],
 ];
 
 /************************************ */
@@ -195,7 +210,7 @@ readdirp(SETIINGS.root, {
             }, {
                 wch: 45
             }, {
-                wch: 20
+                wch: 40
             }],
             // '!merges': [ range ],
         };
@@ -208,12 +223,9 @@ readdirp(SETIINGS.root, {
         const buffer = nodeXlsx.build([{
             name: `report`,
             data: sorted
-        }], options);
-        fs.writeFileSync(`./Report-${year}${month}${day}--tracks-${totalTracks}-bus-${totalBus.length}.xlsx`, buffer, 'binary');
-
-        const buffer2 = nodeXlsx.build([{
-            name: `PNA`,
+        }, {
+            name: `PNA-total-${PNA_BOOK.length-1}`,
             data: PNA_BOOK
         }], options);
-        fs.writeFileSync(`./PNA-${year}${month}${day}--total-${PNA_BOOK.length}.xlsx`, buffer2, 'binary');
+        fs.writeFileSync(`./Report-${year}${month}${day}--tracks-${totalTracks}-bus-${totalBus.length}.xlsx`, buffer, 'binary');
     });
