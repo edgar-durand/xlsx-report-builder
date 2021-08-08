@@ -15,8 +15,8 @@ const SETIINGS = {
 // En este ejemplo, esta variable almacenará todas las rutas de los archivos y directorios dentro de la ruta proporcionada
 const allFilePaths = [];
 const names = [];
+const totalBus = [];
 let totalTracks = 0;
-let totalBus = [];
 
 // Iterar recursivamente a través de una carpeta
 readdirp(SETIINGS.root, { ...SETIINGS })
@@ -50,23 +50,27 @@ readdirp(SETIINGS.root, { ...SETIINGS })
          * @returns 
          */
         const handleLoad = (file) => {
-            let workbook = xlsx.readFile(file);
-            let worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const workbook = xlsx.readFile(file);
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
             let sheet = xlsx.utils.sheet_to_json(worksheet, {
                 header: 1
             });
+
+            // Delete the 7 first rows in sheet
             for (let index = 0; index < 7; index++) {
                 delete sheet[index];                
             }
             
             return sheet.map((row) => {
                 // AQUI AGREGAS LAS JUSTIFICACIONES DE LAS PARADAS
+                /************************************ */
                 const ANALIZE = [
                     ['TRANSMETRO BANES, CORONEL TÍO RPTO TORRENTERAS BANES', 'PARQUEO'],
                     ['La Palma Número Uno,  BANES,  HOLGUÍN', 'PARQUEO'],
                     ['CUPET VEGUITA, VEGUITAS BANES HOLG', 'HABILITANDO'],
                     ['Carretera de Veguita Entre Guamá y Camino al Vivero, Veguitas, Banes, Holguín', 'HABILITANDO'],
                 ]; 
+                /************************************ */
                 row[1] = 'Detenciones';
                 row[6] = '';
                 ANALIZE.forEach((couple) => {
