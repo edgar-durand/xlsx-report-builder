@@ -6,7 +6,7 @@ const fs = require('fs');
 const SETIINGS = {
     root: './path/',
     entryType: 'all',
-    // fileFilter: [],
+    fileFilter: ['*.xlsx', '*.xls'],
     // directoryFilter: [],
     // type: 'files' | 'directories' | 'files_directories' | 'all',
     // depth: number,
