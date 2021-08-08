@@ -1,0 +1,2 @@
+cat index.js | nexe
+https://github.com/nexe/nexe
