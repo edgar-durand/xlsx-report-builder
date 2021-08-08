@@ -16,10 +16,66 @@ const SETIINGS = {
 const allFilePaths = [];
 const names = [];
 const totalBus = [];
+const PNA_BOOK = [];
 let totalTracks = 0;
 
+/************************************ */
+
+// AQUI LAS PARADAS CONOCIDAS COMO AUTORIZADAS SE DEBEN REGISTRAR
+// AUTORIZOS DE PARQUEOS, PARQUEOS EVENTUALES, RUTAS AUTORIZAS ETC.
+// LAS QUE SE ENCUENTREN EN ESTE REGISTRO NO APARECERAN EN EL REPORTE <PNA>
+/************************************ */
+const ALLOWED_STOP = [
+    // KM 0 Zona recojida de los trabajadores
+    'PARQUE LA GUIRA, BANES',
+    'Flor Crombet Entre Bayamo y Carlos Manuel de Céspedes, Banes, Banes, Holguín', //Parque Cardenas
+    'Ave.General Marrero Entre Bayamo y Carlos Manuel de Céspedes, Banes, Banes, Holguín', //Parque Cardenas
+    'Luz y Caballero Entre Flor Crombet y Augusto Blanco, Banes, Banes, Holguín', //Parque Cardenas
+    'Augusto Blanco Entre Bruno Meriño y Bayamo, Banes, Banes, Holguín', //Parque Cardenas
+
+    // EN RUTAS ACTIVIDAD FUNDAMENTAL
+    'El Limpio de Retrete,  BANES,  HOLGUÍN',
+    'TERMINAL ÓMNIBUS BANES, BANES',
+    'Playa Pesquero,  BANES,  HOLGUÍN',
+    'HOTEL BRISAS GUARDALAVACA, GUARDALAVACA',
+    'HOTEL PLAYA PESQUERO, PESQUERO',
+    'ÓPTICA, BANES',
+    'Playa Pesquera Nueva,  RAFAEL FREYRE,  HOLGUÍN',
+    'Melilla,  RAFAEL FREYRE,  HOLGUÍN',
+    'Guardalavaca,  BANES,  HOLGUÍN',
+    'HOTEL GUARDALAVACA, GUARDALAVACA',
+    'Playa de Morales,  -,  HOLGUÍN',
+    'DESTIERRO / ACUEDUCTO, GUARDALAVACA',
+    'HOTEL RIO DE ORO, BAHÍA DE NARANJO',
+    'CONUCO MONGO VIÑA, BAHÍA DE NARANJO',
+    'HOTEL RÍO DE LUNAS, BAHÍA DE NARANJO',
+    'El Ramón,  ANTILLA,  HOLGUÍN',
+
+
+    // EN VIAJES EVENTUALES...
+    // HOLGUIN...
+    'Loma la Cruz,  HOLGUÍN,  HOLGUÍN',
+    'islazul pernik,  HOLGUÍN,  HOLGUÍN',
+
+    // MOA
+    'Moa,  MOA,  HOLGUÍN',
+];
+
+/************************************ */
+
+// AQUI LAS PARADAS CONOCIDAS COMO NO AUTORIZADAS
+/************************************ */
+const FORBIDDEN_STOP = [
+    //EX. ['TRAFFIC STREET, NO. 18', 'CHOFER'S HOUSE'],
+    // ['', ''],
+];
+
+/************************************ */
+
 // Iterar recursivamente a través de una carpeta
-readdirp(SETIINGS.root, { ...SETIINGS })
+readdirp(SETIINGS.root, {
+        ...SETIINGS
+    })
     .on('data', function (entry) {
         // ejecutar cada vez que se encuentre un archivo en el directorio de proveedores
         // Almacene la ruta completa del archivo / directorio en nuestra matriz personalizada
@@ -29,7 +85,7 @@ readdirp(SETIINGS.root, { ...SETIINGS })
         names.push(
             entry.path
         )
-        totalTracks ++;
+        totalTracks++;
     })
     .on('warn', function (warn) {
         console.log("Warn: ", warn);
@@ -58,10 +114,15 @@ readdirp(SETIINGS.root, { ...SETIINGS })
 
             // Delete the 7 first rows in sheet
             for (let index = 0; index < 7; index++) {
-                delete sheet[index];                
+                delete sheet[index];
             }
-            
+
+            const book = sheet[7];
+            const busTag = book[0];
+            let flag = 0;
+
             return sheet.map((row) => {
+
                 // AQUI AGREGAS LAS JUSTIFICACIONES DE LAS PARADAS
                 /************************************ */
                 const ANALIZE = [
@@ -69,13 +130,38 @@ readdirp(SETIINGS.root, { ...SETIINGS })
                     ['La Palma Número Uno,  BANES,  HOLGUÍN', 'PARQUEO'],
                     ['CUPET VEGUITA, VEGUITAS BANES HOLG', 'HABILITANDO'],
                     ['Carretera de Veguita Entre Guamá y Camino al Vivero, Veguitas, Banes, Holguín', 'HABILITANDO'],
-                ]; 
+                ];
                 /************************************ */
+
                 row[1] = 'Detenciones';
                 row[6] = '';
+
+                // ACA SE JUSTIFICAN LAS PARADAS CON LA RELACION PROVISTA EN LA CONSTANTE <ANALIZE>
                 ANALIZE.forEach((couple) => {
+                    ALLOWED_STOP.push(couple[0]);
                     if (row[5] === couple[0]) row[6] = couple[1];
                 });
+                /************************************************ */
+
+                // ACA LLENAMOS LA RELACION DE LAS PARADAS NO AUTORIZADAS QUE SON MAYORES A 5 MIN
+                if (!ALLOWED_STOP.includes(row[5])) { //SI NO ESTA INCLUIDA EN LA LISTA DE PARADAS AUTORIZADAS
+                    if (+String(row[4]).toString().substr(0, 2) > 0 || +String(row[4]).toString().substr(3, 2) > 5) { // SI ES MAYOR DE 5 MIN
+                        const JUSTIFY = Array.from(row);
+
+                        if (flag === 0)
+                            JUSTIFY[0] = busTag;
+                        flag++;
+                        JUSTIFY[1] = 'PNA';
+                        JUSTIFY[6] = '';
+                        //  NOW WE TRY TO JUSTIFY WITH KNOWN PROVIDED FORBIDDEN STOP
+                        FORBIDDEN_STOP.forEach((couples) => {
+                            if (JUSTIFY[5] === couples[0]) JUSTIFY[6] = couples[1];
+                        });
+                        PNA_BOOK.push(JUSTIFY);
+                    }
+                }
+
+                /********************************************************** */
 
                 row[6] = row[6] === '' ? 'TRASLADO DE PERSONAL' : row[6];
                 return row;
@@ -84,24 +170,50 @@ readdirp(SETIINGS.root, { ...SETIINGS })
 
         const sorted = [];
 
+        // ACA ARMAMOS EL LIBRO CON LA ESTRUCTURA DE UN ARRAY DE FILAS
         allFilePaths.forEach(book => {
             const sheet = handleLoad(book);
             for (let index = 0; index < 7; index++) {
-                sheet.shift();                
+                sheet.shift();
             }
-            sheet.forEach((row) => sorted.push(row));          
+            sheet.forEach((row) => sorted.push(row));
         });
+
+
         // const range = {s: {c: 0, r:0 }, e: {c:0, r:3}}; // A1:A4
         const options = {
-            '!cols': [{ wch:20 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 10 }, { wch: 45 }, { wch: 20 } ],
+            '!cols': [{
+                wch: 20
+            }, {
+                wch: 15
+            }, {
+                wch: 20
+            }, {
+                wch: 20
+            }, {
+                wch: 10
+            }, {
+                wch: 45
+            }, {
+                wch: 20
+            }],
             // '!merges': [ range ],
         };
-        
+
         const date = new Date();
         const day = date.getDate().toString().length > 1 ? date.getDate() : `0${date.getDate()}`;
         const month = date.getMonth().toString().length > 1 ? date.getMonth() + 1 : `0${date.getMonth() + 1}`;
         const year = date.getFullYear();
 
-        const buffer = nodeXlsx.build([{ name: `report`, data: sorted }], options);
-        fs.writeFileSync(`./Report-${year}${month}${day}--tracks-${totalTracks}-bus-${totalBus.length}.xlsx`, buffer, 'binary')
+        const buffer = nodeXlsx.build([{
+            name: `report`,
+            data: sorted
+        }], options);
+        fs.writeFileSync(`./Report-${year}${month}${day}--tracks-${totalTracks}-bus-${totalBus.length}.xlsx`, buffer, 'binary');
+
+        const buffer2 = nodeXlsx.build([{
+            name: `PNA`,
+            data: PNA_BOOK
+        }], options);
+        fs.writeFileSync(`./PNA-${year}${month}${day}--total-${PNA_BOOK.length}.xlsx`, buffer2, 'binary');
     });
